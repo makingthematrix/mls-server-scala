@@ -21,9 +21,11 @@ object Registry {
   private def registry(blobMap: Map[String, Blobs] = Map.empty): Behavior[Command] =
     Behaviors.receiveMessage {
       case GetBlobs(id, replyTo) =>
+        println(s"get blobs: $id")
         replyTo ! blobMap.getOrElse(id, EmptyBlobs)
         Behaviors.same
       case AppendBlob(id, blob, replyTo) =>
+        println(s"append blobs: $id, $blob")
         val (newGroups, answer) = blobMap.get(id) match {
           case Some(blobs) =>
             (blobMap ++ Map(id -> Blobs(blobs.blobs ++ Seq(blob))), s"A new blob added to $id")

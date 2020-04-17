@@ -20,21 +20,16 @@ class Routes(registry: ActorRef[Registry.Command])(implicit val system: ActorSys
   def getBlobs(id: String): Future[Blobs] = registry.ask(GetBlobs(id, _))
   def appendBlob(id: String, blob: Blob): Future[ActionPerformed] = registry.ask(AppendBlob(id, blob, _))
 
-  val routes: Route = pathPrefix("groups") {
-    pathPrefix(PathMatcher("""\S.+""".r)) { groupId =>
-      pathPrefix("blobs") {
-        parameterMap { _ =>
-          concat(
-            get { complete(getBlobs(groupId)) },
-            post {
-              entity(as[Blob]) { blob =>
-                onSuccess(appendBlob(groupId, blob)) { performed => complete((StatusCodes.OK, performed)) }
-              }
-            }
-          )
+  private val groupIdMatcher = PathMatcher("""\S.+""".r)
+
+  val routes: Route =
+    path("groups" / groupIdMatcher / "blobs") { groupId =>
+      get { complete(getBlobs(groupId)) } ~
+      (post & entity(as[Blob])) { blob =>
+        onSuccess(appendBlob(groupId, blob)) { performed =>
+          complete((StatusCodes.OK, performed))
         }
       }
     }
-  }
 
 }
